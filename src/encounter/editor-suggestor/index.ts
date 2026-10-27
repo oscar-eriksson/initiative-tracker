@@ -133,7 +133,8 @@ export class EncounterSuggester extends EditorSuggest<string> {
         this._context = SuggestContext.None;
         const range = editor.getRange({ line: 0, ch: 0 }, cursor);
 
-        if (range.indexOf("```encounter\n") === -1) return null;
+        // both ```encounter and ```encounter-table blocks
+        if (!/```encounter(?:-table)?\n/.test(range)) return null;
 
         const split = range.split("\n");
 
@@ -142,7 +143,7 @@ export class EncounterSuggester extends EditorSuggest<string> {
         for (let i = split.length - 1; i >= 0; i--) {
             let line = split[i];
             if (/^```$/.test(line)) return null;
-            if (/^```encounter/.test(line)) {
+            if (/^```encounter(?:-table)?\s*$/.test(line)) {
                 inEncounter = true;
                 start = i;
                 break;
@@ -196,13 +197,13 @@ export class EncounterSuggester extends EditorSuggest<string> {
                 query
             };
         }
-        if (/\s+- (?:\d:)?/.test(line)) {
+        if (/\s+- (?:"?\d+"?:\s*)?/.test(line)) {
             //in creature or player context... try to figure out which
             let found = false;
             for (let i = split.length - 1; i >= 0; i--) {
                 let line = split[i];
                 if (/^```$/.test(line)) return null;
-                if (/^```encounter/.test(line)) return null;
+                if (/^```encounter(?:-table)?\s*$/.test(line)) return null;
                 if (/^players:/.test(line)) {
                     this._context = SuggestContext.Players;
                     found = true;
@@ -217,7 +218,7 @@ export class EncounterSuggester extends EditorSuggest<string> {
             //panic
             if (!found) return null;
 
-            const [_, query] = line.match(/^\s+- (?:\d:)?(.*)$/);
+            const [_, query] = line.match(/^\s+- (?:"?\d+"?:\s*)?(.*)$/);
             return {
                 end: cursor,
                 start: {

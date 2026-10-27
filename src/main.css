@@ -290,3 +290,26 @@ body {
         transform: /* scale(1) */ rotate(660deg);
     }
 }
+/*
+ * Encounter tables: lay the table out as a real table so its headers sit over its columns,
+ * whatever table rules the theme applies. Width and position are left to the theme.
+ */
+.block-language-encounter-table table.encounter-table {
+    display: table;
+    table-layout: auto;
+}
+.block-language-encounter-table table.encounter-table > thead {
+    display: table-header-group;
+}
+.block-language-encounter-table table.encounter-table > tbody {
+    display: table-row-group;
+}
+.block-language-encounter-table table.encounter-table tr {
+    display: table-row;
+}
+.block-language-encounter-table table.encounter-table th,
+.block-language-encounter-table table.encounter-table td {
+    display: table-cell;
+    text-align: left;
+    vertical-align: top;
+}

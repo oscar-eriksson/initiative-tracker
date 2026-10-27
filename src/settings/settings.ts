@@ -28,6 +28,10 @@ import { RpgSystemSetting, getRpgSystem } from "../utils/rpg-system";
 import type { Party } from "./settings.types";
 import type { InputValidate } from "./settings.types";
 import type { Condition } from "src/types/creatures";
+import type {
+    PlayerViewInitiative,
+    PlayerViewOrder
+} from "./settings.types";
 import type { HomebrewCreature } from "src/types/creatures";
 
 export default class InitiativeTrackerSettings extends PluginSettingTab {
@@ -59,6 +63,16 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                     cls: "initiative-tracker-additional-container",
                     attr: {
                         ...(this.plugin.data.openState.player
+                            ? { open: true }
+                            : {})
+                    }
+                })
+            );
+            this._displayPlayerView(
+                containerEl.createEl("details", {
+                    cls: "initiative-tracker-additional-container",
+                    attr: {
+                        ...(this.plugin.data.openState.playerView
                             ? { open: true }
                             : {})
                     }
@@ -245,19 +259,6 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 );
             });
         new Setting(additionalContainer)
-            .setName("Display Player HP in Player View")
-            .setDesc(
-                "If turned off, player health will display as 'Healthy', 'Hurt', etc."
-            )
-            .addToggle((t) => {
-                t.setValue(this.plugin.data.diplayPlayerHPValues).onChange(
-                    async (v) => {
-                        this.plugin.data.diplayPlayerHPValues = v;
-                        await this.plugin.saveSettings();
-                    }
-                );
-            });
-        new Setting(additionalContainer)
             .setName("Roll HP for Creatures")
             .setDesc(
                 createFragment((e) => {
@@ -275,6 +276,22 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                     this.plugin.data.rollHP = v;
                     await this.plugin.saveSettings();
                 });
+            });
+
+        new Setting(additionalContainer)
+            .setName("Letter duplicate creatures")
+            .setDesc(
+                "Label multiple copies of a creature A, B, C instead of 1, 2, 3."
+            )
+            .addToggle((t) => {
+                t.setValue(this.plugin.data.letterNumbering).onChange(
+                    async (v) => {
+                        this.plugin.data.letterNumbering = v;
+                        numbering.letters = v;
+                        await this.plugin.saveSettings();
+                        tracker.updateAndSave();
+                    }
+                );
             });
 
         new Setting(additionalContainer)
@@ -349,6 +366,94 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 });
             });
     }
+    private _displayPlayerView(additionalContainer: HTMLDetailsElement) {
+        additionalContainer.empty();
+        additionalContainer.ontoggle = () => {
+            this.plugin.data.openState.playerView = additionalContainer.open;
+        };
+        const summary = additionalContainer.createEl("summary");
+        new Setting(summary).setHeading().setName("Player View");
+        summary.createDiv("collapser").createDiv("handle");
+
+        new Setting(additionalContainer)
+            .setName("Display Player HP in Player View")
+            .setDesc(
+                "If turned off, player health will display as 'Healthy', 'Hurt', etc."
+            )
+            .addToggle((t) => {
+                t.setValue(this.plugin.data.diplayPlayerHPValues).onChange(
+                    async (v) => {
+                        this.plugin.data.diplayPlayerHPValues = v;
+                        await this.plugin.saveSettings();
+                    }
+                );
+            });
+        const revealOptions = {
+            always: "Always",
+            "after-first-round": "After the first round",
+            never: "Never"
+        };
+        const initiativeOptions = {
+            ...revealOptions,
+            "players-only": "Player characters only"
+        };
+        const orderOptions = {
+            ...revealOptions,
+            "as-they-act": "Enemies appear when they take their first turn"
+        };
+        new Setting(additionalContainer)
+            .setName("Show initiative values in Player View")
+            .setDesc("When the initiative numbers are visible to players.")
+            .addDropdown((d) =>
+                d
+                    .addOptions(initiativeOptions)
+                    .setValue(this.plugin.data.playerViewInitiative)
+                    .onChange(async (v) => {
+                        this.plugin.data.playerViewInitiative =
+                            v as PlayerViewInitiative;
+                        await this.plugin.saveSettings();
+                        tracker.update();
+                    })
+            );
+        new Setting(additionalContainer)
+            .setName("Show turn order in Player View")
+            .setDesc(
+                "When hidden, creatures are listed players first, then alphabetically, instead of by initiative. The creature whose turn it is stays highlighted. \"Enemies appear\" keeps the real order, but each enemy is only listed once it has taken its turn in the first round."
+            )
+            .addDropdown((d) =>
+                d
+                    .addOptions(orderOptions)
+                    .setValue(this.plugin.data.playerViewOrder)
+                    .onChange(async (v) => {
+                        this.plugin.data.playerViewOrder = v as PlayerViewOrder;
+                        await this.plugin.saveSettings();
+                        tracker.update();
+                    })
+            );
+        new Setting(additionalContainer)
+            .setName("Show health in Player View")
+            .setDesc("Show the health column to players.")
+            .addToggle((t) =>
+                t
+                    .setValue(this.plugin.data.playerViewShowHP)
+                    .onChange(async (v) => {
+                        this.plugin.data.playerViewShowHP = v;
+                        await this.plugin.saveSettings();
+                    })
+            );
+        new Setting(additionalContainer)
+            .setName("Show statuses in Player View")
+            .setDesc("Show the statuses column to players.")
+            .addToggle((t) =>
+                t
+                    .setValue(this.plugin.data.playerViewShowStatuses)
+                    .onChange(async (v) => {
+                        this.plugin.data.playerViewShowStatuses = v;
+                        await this.plugin.saveSettings();
+                    })
+            );
+    }
+
     private _displayPlayers(additionalContainer: HTMLDetailsElement) {
         additionalContainer.empty();
         additionalContainer.ontoggle = () => {
@@ -1251,7 +1356,7 @@ class NewPlayerModal extends Modal {
 
 import { App, ButtonComponent, Modal } from "obsidian";
 import { tracker } from "src/tracker/stores/tracker";
-import { getId } from "src/utils/creature";
+import { getId, numbering } from "src/utils/creature";
 
 export async function confirmWithModal(
     app: App,

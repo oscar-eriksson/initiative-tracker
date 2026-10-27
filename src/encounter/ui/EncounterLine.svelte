@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { promptStartEncounter } from "src/encounter/start-modal";
     import { ExtraButtonComponent } from "obsidian";
 
     import type InitiativeTracker from "src/main";
@@ -36,7 +37,9 @@
     }
 
     const openButton = (node: HTMLElement) => {
-        new ExtraButtonComponent(node).setIcon(START_ENCOUNTER);
+        new ExtraButtonComponent(node)
+            .setIcon(START_ENCOUNTER)
+            .setTooltip("Begin Encounter");
     };
     const open = async () => {
         if (!plugin.view) {
@@ -53,8 +56,13 @@
             })
             .flat();
 
+        const states = creatures.map((c) => c.toJSON());
+        const surprised = await promptStartEncounter(plugin, states);
+        if (!surprised) return;
+
         tracker.new(plugin, {
-            creatures: creatures.map((c) => c.toJSON()),
+            creatures: states,
+            surprised,
             name: null,
             state: false,
             round: 1,
@@ -66,7 +74,9 @@
     };
 
     const addButton = (node: HTMLElement) => {
-        new ExtraButtonComponent(node).setIcon("plus-with-circle");
+        new ExtraButtonComponent(node)
+            .setIcon("plus-with-circle")
+            .setTooltip("Add to Encounter");
     };
 
     const add = async (evt: MouseEvent) => {

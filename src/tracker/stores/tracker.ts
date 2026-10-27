@@ -341,7 +341,8 @@ function createTracker() {
 
     function rollIntiative(
         plugin: InitiativeTracker,
-        creatures: Creature[]
+        creatures: Creature[],
+        surprised: Set<string> = new Set()
     ): Creature[] {
         for (let creature of creatures) {
             if (creature.static && creature.initiative) continue;
@@ -359,9 +360,20 @@ function createTracker() {
             ) {
                 creature.initiative = 0;
             } else {
-                creature.initiative = plugin.getInitiativeValue(
-                    creature.modifier
-                );
+                if (surprised.has(creature.id)) {
+                    // Disadvantage: roll twice, keep the lower.
+                    const rolls = [
+                        plugin.getInitiativeValue(creature.modifier),
+                        plugin.getInitiativeValue(creature.modifier)
+                    ];
+                    creature.initiative = Math.min(...rolls);
+                    creature.initiativeRolls = rolls;
+                } else {
+                    creature.initiative = plugin.getInitiativeValue(
+                        creature.modifier
+                    );
+                    creature.initiativeRolls = undefined;
+                }
             }
             creature.manualOrder = null;
         }
@@ -509,9 +521,8 @@ function createTracker() {
                         (entry.resist ? 0.5 : 1) *
                         Number(entry.customMod);
                     const name = [creature.name];
-                    if (creature.number > 0) {
-                        name.push(`${creature.number}`);
-                    }
+                    const suffix = creature.getSuffix();
+                    if (suffix) name.push(suffix);
                     const message: UpdateLogMessage = {
                         name: name.join(" "),
                         hp: null,
@@ -813,7 +824,7 @@ function createTracker() {
                     creatures = tempCreatureArray;
                 }
                 if (!state || state?.roll) {
-                    rollIntiative(plugin, creatures);
+                    rollIntiative(plugin, creatures, new Set(state?.surprised));
                 }
                 setNumbers(creatures);
                 if (
@@ -1280,9 +1291,8 @@ class Tracker {
                     (entry.resist ? 0.5 : 1) *
                     Number(entry.customMod);
                 const name = [creature.name];
-                if (creature.number > 0) {
-                    name.push(`${creature.number}`);
-                }
+                const suffix = creature.getSuffix();
+                if (suffix) name.push(suffix);
                 const message: UpdateLogMessage = {
                     name: name.join(" "),
                     hp: null,

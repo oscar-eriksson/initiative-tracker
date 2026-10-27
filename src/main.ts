@@ -25,7 +25,7 @@ import type { SRDMonster } from "./types/creatures";
 import InitiativeTrackerSettings from "./settings/settings";
 import { EncounterBlock, EncounterParser } from "./encounter";
 import EncounterLine from "./encounter/ui/EncounterLine.svelte";
-import { Creature, getId } from "./utils/creature";
+import { Creature, getId, numbering } from "./utils/creature";
 import TrackerView, { CreatureView } from "./tracker/view";
 import BuilderView from "./builder/view";
 import PlayerView from "./tracker/player-view";
@@ -709,6 +709,7 @@ export default class InitiativeTracker extends Plugin {
         );
 
         this.data = data;
+        numbering.letters = !!data.letterNumbering;
         if (this.data.statuses?.some((c) => !c.id)) {
             for (const condition of this.data.statuses) {
                 condition.id =

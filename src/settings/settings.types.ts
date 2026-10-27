@@ -11,6 +11,7 @@ export interface InitiativeTrackerData {
     statuses: Condition[];
     unconsciousId: string;
     openState: {
+        playerView?: boolean;
         battle: boolean;
         party: boolean;
         status: boolean;
@@ -42,7 +43,12 @@ export interface InitiativeTrackerData {
     resolveTies: string;
     useLegacy: boolean;
     diplayPlayerHPValues: boolean;
+    playerViewInitiative: PlayerViewInitiative;
+    playerViewOrder: PlayerViewOrder;
+    playerViewShowHP: boolean;
+    playerViewShowStatuses: boolean;
     rollHP: boolean;
+    letterNumbering: boolean;
     builder: BuilderState;
     descending: boolean;
     version: number[];
@@ -57,3 +63,10 @@ export interface Party {
     players: string[];
     name: string;
 }
+
+/** When a piece of combat information is visible in the player view. */
+export type PlayerViewReveal = "always" | "after-first-round" | "never";
+/** Initiative values: can also be limited to player characters. */
+export type PlayerViewInitiative = PlayerViewReveal | "players-only";
+/** Turn order: can also reveal enemies in order as they take their first turn. */
+export type PlayerViewOrder = PlayerViewReveal | "as-they-act";

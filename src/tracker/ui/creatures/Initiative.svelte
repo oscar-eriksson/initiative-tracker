@@ -8,13 +8,30 @@
     export let initiative: number;
 
     export let modifier: number;
+
+    export let rolls: number[] | undefined = undefined;
+
+    const label = (
+        initiative: number,
+        modifier: number,
+        rolls: number[] | undefined
+    ) => {
+        // Manual edits change the initiative, which invalidates the stored rolls.
+        if (!rolls?.length || Math.min(...rolls) != initiative)
+            return `${initiative - modifier} + ${modifier}`;
+        const kept = rolls.indexOf(initiative);
+        const dropped = rolls.filter((_, i) => i != kept);
+        return `Disadvantage: kept ${initiative - modifier} (dropped ${dropped
+            .map((r) => r - modifier)
+            .join(", ")}) + ${modifier}`;
+    };
 </script>
 
 <div class="tree-item-flair-outer">
     {#key initiative}
         <input
             class="editable initiative tree-item-flair"
-            aria-label={`${initiative - modifier} + ${modifier}`}
+            aria-label={label(initiative, modifier, rolls)}
             on:click={function (evt) {
                 this.select();
             }}

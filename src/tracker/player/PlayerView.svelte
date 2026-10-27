@@ -8,7 +8,7 @@
     import { createEventDispatcher } from "svelte";
 
     import { tracker } from "../stores/tracker";
-    const { state, ordered, data } = tracker;
+    const { state, ordered, data, round } = tracker;
 
     const hpIcon = (node: HTMLElement) => {
         setIcon(node, HP);
@@ -41,7 +41,42 @@
         return false;
     };
 
-    $: activeAndVisible = $ordered.filter((c) => c.enabled && !c.hidden);
+    const revealed = (mode: string, started: boolean, round: number) =>
+        mode != "never" && (mode != "after-first-round" || (started && round > 1));
+
+    $: initiativeMode = $data?.playerViewInitiative ?? "always";
+    $: orderMode = $data?.playerViewOrder ?? "always";
+    $: playersOnly = initiativeMode == "players-only";
+    $: showInitiative =
+        playersOnly || revealed(initiativeMode, $state, $round);
+    $: asTheyAct = orderMode == "as-they-act";
+    $: showHP = $data?.playerViewShowHP ?? true;
+    $: showStatuses = $data?.playerViewShowStatuses ?? true;
+    $: showOrder = asTheyAct || revealed(orderMode, $state, $round);
+
+    /** Enemies are listed once they have had a turn; players and allies always are, and from round 2 everyone is. */
+    const hasActed = (creature: Creature) => {
+        if (creature.player || creature.friendly || $round > 1) return true;
+        const active = $ordered.findIndex((c) => c.active);
+        return active > -1 && $ordered.indexOf(creature) <= active;
+    };
+
+    $: activeAndVisible = (() => {
+        const list = $ordered.filter((c) => c.enabled && !c.hidden);
+        if (asTheyAct) {
+            // Creatures yet to act go last as "?" placeholders.
+            return [
+                ...list.filter((c) => hasActed(c)),
+                ...list.filter((c) => !hasActed(c))
+            ];
+        }
+        if (showOrder) return list;
+        return [...list].sort(
+            (a, b) =>
+                Number(!!b.player) - Number(!!a.player) ||
+                a.getName().localeCompare(b.getName())
+        );
+    })();
 
     const name = (creature: Creature) => creature.getName();
     const friendIcon = (node: HTMLElement) => {
@@ -51,16 +86,34 @@
 
 <table class="initiative-tracker-table" transition:fade>
     <thead class="tracker-table-header">
-        <th style="width:5%"><strong use:iniIcon /></th>
+        {#if showInitiative}
+            <th style="width:5%"><strong use:iniIcon /></th>
+        {/if}
         <th class="left" style="width:30%"><strong>Name</strong></th>
-        <th style="width:15%" class="center"><strong use:hpIcon /></th>
-        <th><strong> Statuses </strong></th>
+        {#if showHP}
+            <th style="width:15%" class="center"><strong use:hpIcon /></th>
+        {/if}
+        {#if showStatuses}
+            <th><strong> Statuses </strong></th>
+        {/if}
     </thead>
     <tbody>
         {#each activeAndVisible as creature (creature.id)}
-            <tr class:active={amIActive(creature) && $state}>
-                <td class="center">{creature.initiative}</td>
+            {@const unknown = asTheyAct && !hasActed(creature)}
+            <tr class:active={!unknown && amIActive(creature) && $state}>
+                {#if showInitiative}
+                    <td class="center">
+                        {unknown
+                            ? "?"
+                            : playersOnly && !creature.player
+                            ? "–"
+                            : creature.initiative}
+                    </td>
+                {/if}
                 <td class='name'>
+                    {#if unknown}
+                        ?
+                    {:else}
                     {#if creature.friendly}
                         <div
                             class="contains-icon"
@@ -69,20 +122,31 @@
                         />
                     {/if}
                     {name(creature)}
-                </td>
-                <td
-                    class:center={true}
-                    class={getHpStatus(creature.hp, creature.max).toLowerCase()}
-                >
-                    {#if creature.player && $data.diplayPlayerHPValues}
-                        <div class="center">{@html creature.hpDisplay}</div>
-                    {:else}
-                        <span>{getHpStatus(creature.hp, creature.max)}</span>
                     {/if}
                 </td>
-                <td class="center">
-                    {[...creature.status].map((s) => s.name).join(", ")}
-                </td>
+                {#if showHP}
+                    <td
+                        class:center={true}
+                        class={unknown
+                            ? ""
+                            : getHpStatus(creature.hp, creature.max).toLowerCase()}
+                    >
+                        {#if unknown}
+                            <span>?</span>
+                        {:else if creature.player && $data.diplayPlayerHPValues}
+                            <div class="center">{@html creature.hpDisplay}</div>
+                        {:else}
+                            <span>{getHpStatus(creature.hp, creature.max)}</span>
+                        {/if}
+                    </td>
+                {/if}
+                {#if showStatuses}
+                    <td class="center">
+                        {unknown
+                            ? ""
+                            : [...creature.status].map((s) => s.name).join(", ")}
+                    </td>
+                {/if}
             </tr>
         {/each}
     </tbody>

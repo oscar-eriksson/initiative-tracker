@@ -10,6 +10,7 @@
         START_ENCOUNTER
     } from "src/utils";
     import { Creature } from "src/utils/creature";
+    import { promptStartEncounter } from "src/encounter/start-modal";
     import CreatureComponent from "./Creature.svelte";
     import type { StackRoller } from "@javalent/dice-roller";
     import { setContext } from "svelte";
@@ -74,8 +75,13 @@
                     plugin.getPlayerByName(p).toJSON()
                 );
 
+                const states = [...playerList, ...creatures];
+                const surprised = await promptStartEncounter(plugin, states);
+                if (!surprised) return;
+
                 tracker.new(plugin, {
-                    creatures: [...playerList, ...creatures],
+                    creatures: states,
+                    surprised,
                     name,
                     round: 1,
                     state: false,
@@ -89,7 +95,9 @@
     };
 
     const addButton = (node: HTMLElement) => {
-        new ExtraButtonComponent(node).setIcon("plus-with-circle");
+        new ExtraButtonComponent(node)
+            .setIcon("plus-with-circle")
+            .setTooltip("Add to Encounter");
     };
 
     const add = async (evt: MouseEvent) => {

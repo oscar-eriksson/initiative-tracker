@@ -8,6 +8,7 @@ export interface InitiativeViewState {
     logFile: string;
     roll?: boolean;
     rollHP?: boolean;
+    surprised?: string[];
     timestamp?: number;
 }export interface InitiativeViewState {
     creatures: CreatureState[];
@@ -18,6 +19,7 @@ export interface InitiativeViewState {
     newLog?: boolean;
     roll?: boolean;
     rollHP?: boolean;
+    surprised?: string[];
     timestamp?: number;
 }
 

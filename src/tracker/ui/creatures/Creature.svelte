@@ -57,6 +57,7 @@
 <td class="initiative-container" on:click={(e) => e.stopPropagation()}>
     <Initiative
         initiative={creature.initiative}
+        rolls={creature.initiativeRolls}
         modifier={[creature.modifier].flat().reduce((a, b) => a + b, 0)}
         on:click={(e) => e.stopPropagation()}
         on:initiative={(e) => {

@@ -6,6 +6,18 @@ import { Conditions } from ".";
 import { DEFAULT_UNDEFINED } from "./constants";
 import type InitiativeTracker from "src/main";
 
+/** Whether duplicate creatures are labelled A, B, C instead of 1, 2, 3. Synced from plugin settings. */
+export const numbering = { letters: false };
+
+export function formatNumber(n: number): string {
+    if (!numbering.letters) return `${n}`;
+    let label = "";
+    for (; n > 0; n = Math.floor((n - 1) / 26)) {
+        label = String.fromCharCode(65 + ((n - 1) % 26)) + label;
+    }
+    return label;
+}
+
 export function getId() {
     return "ID_xyxyxyxyxyxy".replace(/[xy]/g, function (c) {
         var r = (Math.random() * 16) | 0,
@@ -35,6 +47,8 @@ export class Creature {
     status: Set<Condition> = new Set();
     marker: string;
     initiative: number;
+    /** Both rolls when initiative was rolled with disadvantage. */
+    initiativeRolls?: number[];
     manualOrder: number;
     static: boolean = false;
     source: string | string[];
@@ -42,6 +56,8 @@ export class Creature {
     xp: number;
     viewing: boolean = false;
     number = 0;
+    /** Custom suffix (e.g. an emoji) that replaces the number/letter. */
+    label?: string;
     display: string;
     friendly: boolean = false;
     "statblock-link": string;
@@ -133,10 +149,15 @@ export class Creature {
         /* if (this.display) {
             return this.display;
         } */
-        if (this.number > 0) {
-            name.push(`${this.number}`);
-        }
+        const suffix = this.getSuffix();
+        if (suffix) name.push(suffix);
         return name.join(" ");
+    }
+    /** The custom label if set, otherwise the number (or letter) used to tell duplicates apart. */
+    getSuffix(): string | null {
+        if (this.label?.trim()) return this.label.trim();
+        if (this.number > 0) return formatNumber(this.number);
+        return null;
     }
     getStatblockLink(): string {
         if ("statblock-link" in this) {
@@ -205,6 +226,7 @@ export class Creature {
         this.note = creature.note;
         this.level = creature.level;
         this.player = creature.player;
+        this.label = (creature as Creature).label;
         this["statblock-link"] = creature["statblock-link"];
 
         this.marker = creature.marker;
@@ -220,6 +242,8 @@ export class Creature {
             name: this.name,
             display: this.display,
             initiative: this.initiative,
+            initiativeRolls: this.initiativeRolls,
+            label: this.label,
             static: this.static,
             modifier: this.modifier,
             hp: this.max,
@@ -258,6 +282,8 @@ export class Creature {
             creature = new Creature(state, state.initiative);
         }
         creature.enabled = state.enabled;
+        creature.initiativeRolls = state.initiativeRolls;
+        creature.label = state.label;
 
         creature.temp = state.tempHP ? state.tempHP : 0;
         creature.current_max = state.currentMaxHP;

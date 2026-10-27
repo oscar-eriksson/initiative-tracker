@@ -74,7 +74,12 @@ export const DEFAULT_SETTINGS: InitiativeTrackerData = {
     resolveTies: RESOLVE_TIES.playerFirst,
     useLegacy: false,
     diplayPlayerHPValues: true,
+    playerViewInitiative: "always",
+    playerViewOrder: "always",
+    playerViewShowHP: true,
+    playerViewShowStatuses: true,
     rollHP: false,
+    letterNumbering: false,
     descending: true,
     builder: {
         showParty: true,

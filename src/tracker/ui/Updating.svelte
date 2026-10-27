@@ -250,8 +250,8 @@
                         <td>
                             <span>
                                 {creature.name +
-                                    (creature.number
-                                        ? " " + creature.number
+                                    (creature.getSuffix()
+                                        ? " " + creature.getSuffix()
                                         : "")}
                             </span>
                         </td>

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { promptStartEncounter } from "src/encounter/start-modal";
     import { ExtraButtonComponent, setIcon } from "obsidian";
     import { getRpgSystem, DICE, RANDOM_HP, START_ENCOUNTER } from "src/utils";
 
@@ -52,7 +53,9 @@
     $: difficulty = rpgSystem.getEncounterDifficulty(creatureMap, playerLevels);
 
     const openButton = (node: HTMLElement) => {
-        new ExtraButtonComponent(node).setIcon(START_ENCOUNTER);
+        new ExtraButtonComponent(node)
+            .setIcon(START_ENCOUNTER)
+            .setTooltip("Start Encounter");
     };
 
     const open = async () => {
@@ -83,8 +86,12 @@
         for (const creature of [...playersForEncounter, ...creatures]) {
             transformedCreatures.push(creature.toJSON());
         }
+        const surprised = await promptStartEncounter(plugin, transformedCreatures);
+        if (!surprised) return;
+
         tracker.new(plugin, {
             creatures: transformedCreatures,
+            surprised,
             name,
             round: 1,
             state: false,
@@ -97,7 +104,9 @@
     };
 
     const addButton = (node: HTMLElement) => {
-        new ExtraButtonComponent(node).setIcon("plus-with-circle");
+        new ExtraButtonComponent(node)
+            .setIcon("plus-with-circle")
+            .setTooltip("Add to Encounter");
     };
 
     const add = async (evt: MouseEvent) => {

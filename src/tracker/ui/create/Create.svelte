@@ -218,6 +218,19 @@
                 tabindex="0"
             />
         </div>
+        {#if isEditing}
+            <div>
+                <label for="add-label">Label</label>
+                <input
+                    bind:value={creature.label}
+                    id="add-label"
+                    type="text"
+                    name="label"
+                    placeholder="Replaces the number/letter, e.g. 🔴"
+                    tabindex="0"
+                />
+            </div>
+        {/if}
         <div>
             <label for="add-hp">HP</label>
             <input

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { trackMenu } from "src/utils/menu";
     import {
         ExtraButtonComponent,
         type MenuItem,
@@ -77,6 +78,26 @@
                 .setTitle("Re-roll Initiatives")
                 .onClick(() => tracker.roll(plugin));
         });
+        const enemies = $tracker.filter((c) => !c.player && !c.friendly);
+        if (enemies.length) {
+            const hide = enemies.some((c) => !c.hidden);
+            menu.addItem((item) => {
+                item.setIcon(hide ? "eye-off" : "eye")
+                    .setTitle(
+                        hide
+                            ? "Hide All Enemies from Players"
+                            : "Show All Enemies to Players"
+                    )
+                    .onClick(() =>
+                        tracker.updateCreatures(
+                            ...enemies.map((creature) => ({
+                                creature,
+                                change: { hidden: hide }
+                            }))
+                        )
+                    );
+            });
+        }
         menu.addItem((item) => {
             item.setIcon(GROUP)
                 .setTitle(
@@ -291,6 +312,7 @@
                 });
         });
 
+        trackMenu(menu);
         menu.showAtMouseEvent(evt);
     };
 

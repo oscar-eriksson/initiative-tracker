@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { trackMenu } from "src/utils/menu";
     import { ExtraButtonComponent, Menu } from "obsidian";
     import {
         DISABLE,
@@ -105,6 +106,7 @@
                         tracker.remove(creature);
                     });
             });
+            trackMenu(menu);
             menu.showAtPosition(evt);
         };
     };
